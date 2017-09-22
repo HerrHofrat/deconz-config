@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<!--
+GNU General Public License v3.0
+https://www.github.com/HerrHofrat/deconz-config
+-->
+<html lang="en">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0" />
+    <title>deConz Configuration</title>
+
+    <!-- CSS  -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
+
+</head>
+
+<body>
+    <div class="section no-pad-bot" id="index-banner">
+        <div class="container">
+            <br><br>
+            <h3 class="header center teal-text">deConz Configuration Tool</h3>
+            <br><br>
+
+        </div>
+    </div>
+
+
+    <div class="container">
+        <div class="row">
+            <div class="input-field col m3 s8">
+                <input id="address" type="text">
+                <label for="address">Address without http://</label>
+            </div>
+            <div class="input-field col m1 s4">
+                <input id="port" type="text">
+                <label for="port">Port</label>
+            </div>
+            <div class="input-field col m2 s12">
+                <input id="api_key" type="text">
+                <label for="api_key">API Key</label>
+            </div>
+            <div class="input-field col m3 s6">
+                <a class="waves-effect waves-light btn" onclick="discover();" id="connection_discover"><i class="material-icons left">search</i>Discover</a>
+            </div>
+            <div class="input-field col m3 s6">
+                <a class="waves-effect waves-light btn" onclick="connect();" id="connection_open"><i class="material-icons left">cloud</i>Open</a>
+                <a class="waves-effect waves-light btn" onclick="disconnect();" id="connection_close" style="display:none;"><i class="material-icons left">cloud_off</i>Close</a>
+            </div>
+        </div>
+        <div class="section" id="gateway_data" style="display:none;">
+            <div class="row">
+                <div class="col m6 s12">
+                    <b>Name</b> <span id="gateway_data_name"></span><br/>
+                    <b>Zigbee Channel</b> <span id="gateway_data_zigbeechannel"></span><br/>
+                </div>
+                <div class="col m6 s12">
+                    <b>API Version</b> <span id="gateway_data_apiversion"></span><br/>
+                    <b>SW Version</b> <span id="gateway_data_swversion"></span><br/>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col s12">
+                    <a class="waves-effect waves-light btn" onclick="permitJoin();" id="permit_join_button"><i class="material-icons left" id="permit_join_icon">add</i><i class="left" id="permit_join_counter" style="display:none;">0</i>Permit join for 60 seconds</a>
+                </div>
+            </div>
+        </div>
+        <div class="section" id="sensor_list" style="display:none;">
+            <div class="row">
+                <div class="input-field col s12">
+                    <select id="sensors" onchange="selectSensor(this.value);">
+                        <option value="" disabled selected>Choose sensor</option>
+                    </select>
+                    <label>Available Sensors</label>
+                </div>
+            </div>
+        </div>
+        <div class="section" id="sensor_data" style="display:none;">
+            <div class="row">
+                <div class="col m6 s12">
+                    <b>Manufacturer</b> <span id="sensor_data_manufacturer"></span><br/>
+                    <b>Model</b> <span id="sensor_data_model"></span><br/>
+                    <b>ETag</b> <span id="sensor_data_etag"></span><br/>
+                </div>
+                <div class="col m6 s12">
+                    <b>Version</b> <span id="sensor_data_version"></span><br/>
+                    <b>Type</b> <span id="sensor_data_type"></span><br/>
+                    <b>UniqueID</b> <span id="sensor_data_uniqueid"></span><br/>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col m6 s12">
+                    <b>updated</b> <span id="sensor_data_updated"></span><br/>
+                </div>
+                <div class="col m6 s12">
+                    <b>status</b> <span id="sensor_data_status"></span><br/>
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-field col s12">
+                    <input id="sensor_name" type="text">
+                    <label for="sensor_name" class="active">Sensor Name</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col m4 s6">
+                    <a class="waves-effect waves-light btn" onclick="updateSensor();">Update</a>
+                </div>
+                <div class="col m4 s6">
+                    <a class="waves-effect waves-light btn" onclick="deleteSensor();">Delete</a>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!--  Scripts-->
+        <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
+        <script type="text/javascript">
+            var sensorData = new Array();
+            var webSocket;
+            $(document).ready(function() {
+                $("select").material_select();
+            });
+
+            function discover() {
+                $.ajax({
+                        url: "https://dresden-light.appspot.com/discover",
+                        method: "GET",
+                        dataType: "json"
+                    })
+                    .success(function(data) {
+                        console.log(data);
+                        $("#address").val(data[0].internalipaddress);
+                        $("#port").val(data[0].internalport);
+                        Materialize.updateTextFields();
+                    })
+                    .error(function(data) {
+                        console.log(data);
+                    });
+            }
+
+            function connect() {
+                $.ajax({
+                        url: "http://" + $("#address").val() + ":" + $("#port").val() + "/api/" + $("#api_key").val(),
+                        method: "GET",
+                        dataType: "json"
+                    })
+                    .success(function(data) {
+                        console.log(data);
+                        $("#connection_open").hide();
+                        $("#connection_close").show();
+                        setupWebsocket(data.config.websocketport);
+                        $("#gateway_data_name").text(data.config.name);
+                        $("#gateway_data_zigbeechannel").text(data.config.zigbeechannel);
+                        $("#gateway_data_apiversion").text(data.config.apiversion);
+                        $("#gateway_data_swversion").text(data.config.swversion);
+                        $("#gateway_data").show();
+                        sensorData = data.sensors;
+                        updateSensorList();
+                        $("#sensor_list").show();
+                    })
+                    .error(function(data) {
+                        console.log(data);
+                    });
+            }
+
+            function disconnect() {
+                webSocket.close();
+                delete webSocket;
+                webSocket = null;
+
+                $("#connection_open").show();
+                $("#connection_close").hide();
+                $("#gateway_data").hide();
+                $("#sensor_list").hide();
+                $("#sensor_data").hide();
+            }
+
+            function setupWebsocket(port) {
+                webSocket = new WebSocket("ws://" + $("#address").val() + ":" + port);
+
+                webSocket.onerror = function(event) {
+                    console.log(event);
+                };
+
+                webSocket.onopen = function(event) {
+                    webSocket.send("Ping");
+                    console.log(event);
+                };
+
+                webSocket.onmessage = function(event) {
+                    console.log(event);
+                    updateData = jQuery.parseJSON(event.data);
+                    if ("event" === updateData["t"] && "sensors" === updateData["r"]) {
+                        if ("added" === updateData["e"]) {
+                            Materialize.toast("New sensor found: " + updateData.sensor.name, 3000)
+                            $("#sensors").append($("<option>", {
+                                value: updateData.sensor.id,
+                                text: updateData.sensor.name
+                            }));
+                            $("#sensors").material_select();
+                            sensorData[updateData.sensor.id] = updateData.sensor;
+                        } else if ("changed" === updateData["e"]) {
+                            id = updateData["id"];
+                            sensorData[id].state = updateData["state"];
+                            if (id == $("#sensors").val()) {
+                                $("#sensor_data_updated").text(sensorData[id].state.lastupdated);
+                                $("#sensor_data_status").text(Object.keys(sensorData[id].state)[1] + ": " + sensorData[id].state[Object.keys(sensorData[id].state)[1]]);
+                            }
+                        }
+                    }
+                };
+            }
+
+            function updateSensorList() {
+                $("#sensors").empty();
+                $("#sensors").append("<option value=\"-1\" disabled selected>Choose your option</option>");
+                $.each(sensorData, function(i, item) {
+                    $("#sensors").append($("<option>", {
+                        value: i,
+                        text: item.name
+                    }));
+                });
+                $("#sensors").material_select();
+            }
+
+            // SENSOR FUNCTIONS
+            function selectSensor(id) {
+
+                $("#sensor_data").show();
+                $("#sensor_data_manufacturer").text(sensorData[id].manufacturername);
+                $("#sensor_data_model").text(sensorData[id].modelid);
+                $("#sensor_data_etag").text(sensorData[id].etag);
+                $("#sensor_data_version").text(sensorData[id].swversion);
+                $("#sensor_data_type").text(sensorData[id].type);
+                $("#sensor_data_uniqueid").text(sensorData[id].uniqueid);
+                try {
+                    $("#sensor_data_updated").text(sensorData[id].state.lastupdated);
+                } catch (e) {}
+                try {
+                    $("#sensor_data_status").text(Object.keys(sensorData[id].state)[1] + ": " + sensorData[id].state[Object.keys(sensorData[id].state)[1]]);
+                } catch (e) {}
+                $("#sensor_name").val(sensorData[id].name);
+                Materialize.updateTextFields();
+            }
+
+            function updateSensor() {
+                $.ajax({
+                        url: "http://" + $("#address").val() + ":" + $("#port").val() + "/api/" + $("#api_key").val() + "/sensors/" + $("#sensors").val(),
+                        method: "PUT",
+                        data: "{\"name\": \"" + $("#sensor_name").val() + "\"}",
+                        dataType: "json"
+                    })
+                    .success(function(data) {
+                        sensorData[$("#sensors").val()].name = $("#sensor_name").val();
+                        id = $("#sensors").val();
+                        updateSensorList();
+                        $("#sensors").val(id).change();
+                        $("#sensors").material_select();
+                    })
+                    .error(function(data) {
+                        console.log(data);
+                    });
+            }
+
+            function deleteSensor() {
+                $.ajax({
+                        beforeSend: function(request) {
+                            return confirm("Are you sure you want to delete " + $("#sensor_name").val() + "?");
+                        },
+                        url: "http://" + $("#address").val() + ":" + $("#port").val() + "/api/" + $("#api_key").val() + "/sensors/" + $("#sensors").val(),
+                        method: "DELETE"
+                    })
+                    .success(function(data) {
+                        $("#sensor_data").hide();
+                        delete sensorData[$("#sensors").val()];
+                        updateSensorList();
+                    })
+                    .error(function(data) {
+                        console.log(data);
+                    });
+            }
+
+            // DIV FUNCTIONS
+            function permitJoin() {
+                if ($("#permit_join_button").hasClass("disabled"))
+                    return;
+                $("#permit_join_button").addClass("disabled");
+                $.ajax({
+                        url: "http://" + $("#address").val() + ":" + $("#port").val() + "/api/" + $("#api_key").val() + "/config",
+                        method: "PUT",
+                        data: "{\"permitjoin\": \"60\"}",
+                        dataType: "json"
+                    })
+                    .success(function(data) {
+                        var counter = 60;
+                        $("#permit_join_icon").hide();
+                        $("#permit_join_counter").show();
+                        $("#permit_join_counter").text(counter);
+                        var interval = setInterval(function() {
+                            counter--;
+                            $("#permit_join_counter").text(counter);
+                            if (counter <= 0) {
+                                clearInterval(interval);
+                                $("#permit_join_button").removeClass("disabled");
+                                $("#permit_join_icon").show();
+                                $("#permit_join_counter").hide();
+                            }
+                        }, 1000);
+
+                    })
+                    .error(function(data) {
+                        console.log(data);
+                    });
+            }
+        </script>
+</body>
+
+</html>
