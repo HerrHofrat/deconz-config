@@ -29,25 +29,29 @@ https://www.github.com/HerrHofrat/deconz-config
 
     <div class="container">
         <div class="row">
-            <div class="input-field col m3 s8">
-                <input id="address" type="text">
-                <label for="address">Address without http://</label>
-            </div>
-            <div class="input-field col m1 s4">
-                <input id="port" type="text">
-                <label for="port">Port</label>
-            </div>
-            <div class="input-field col m2 s12">
-                <input id="api_key" type="text">
-                <label for="api_key">API Key</label>
-            </div>
-            <div class="input-field col m3 s6">
-                <a class="waves-effect waves-light btn" onclick="discover();" id="connection_discover"><i class="material-icons left">search</i>Discover</a>
-            </div>
-            <div class="input-field col m3 s6">
-                <a class="waves-effect waves-light btn" onclick="connect();" id="connection_open"><i class="material-icons left">cloud</i>Open</a>
-                <a class="waves-effect waves-light btn" onclick="disconnect();" id="connection_close" style="display:none;"><i class="material-icons left">cloud_off</i>Close</a>
-            </div>
+        	<iframe id="remember" name="remember" style="display:none;" src="about:blank"></iframe>
+			<form target="remember" method="post" action="about:blank">
+		        <div class="input-field col m3 s8">
+		            <input id="ip-address" type="text">
+		            <label for="ip-address">Address without http://</label>
+		        </div>
+		        <div class="input-field col m1 s4">
+		            <input id="port" type="text">
+		            <label for="port">Port</label>
+		        </div>
+		        <div class="input-field col m2 s12">
+		            <input id="api_key" type="text">
+		            <label for="api_key">API Key</label>
+		        </div>
+		        <div class="input-field col m3 s6">
+		            <a class="waves-effect waves-light btn" onclick="discover();" id="connection_discover"><i class="material-icons left">search</i>Discover</a>
+		        </div>
+		        <div class="input-field col m3 s6">
+		        	<button type="submit" style="display:none;" id="connection_remember"></button>
+		            <a class="waves-effect waves-light btn" onclick="connect();" id="connection_open"><i class="material-icons left">cloud</i>Open</a>
+		            <a class="waves-effect waves-light btn" onclick="disconnect();" id="connection_close" style="display:none;"><i class="material-icons left">cloud_off</i>Close</a>	
+		        </div>
+            </form>
         </div>
         <div class="section" id="gateway_data" style="display:none;">
             <div class="row">
@@ -133,7 +137,7 @@ https://www.github.com/HerrHofrat/deconz-config
                     })
                     .success(function(data) {
                         console.log(data);
-                        $("#address").val(data[0].internalipaddress);
+                        $("#ip-address").val(data[0].internalipaddress);
                         $("#port").val(data[0].internalport);
                         Materialize.updateTextFields();
                     })
@@ -143,8 +147,9 @@ https://www.github.com/HerrHofrat/deconz-config
             }
 
             function connect() {
+            	$("#connection_remember").click()
                 $.ajax({
-                        url: "http://" + $("#address").val() + ":" + $("#port").val() + "/api/" + $("#api_key").val(),
+                        url: "http://" + $("#ip-address").val() + ":" + $("#port").val() + "/api/" + $("#api_key").val(),
                         method: "GET",
                         dataType: "json"
                     })
@@ -180,7 +185,7 @@ https://www.github.com/HerrHofrat/deconz-config
             }
 
             function setupWebsocket(port) {
-                webSocket = new WebSocket("ws://" + $("#address").val() + ":" + port);
+                webSocket = new WebSocket("ws://" + $("#ip-address").val() + ":" + port);
 
                 webSocket.onerror = function(event) {
                     console.log(event);
@@ -249,7 +254,7 @@ https://www.github.com/HerrHofrat/deconz-config
 
             function updateSensor() {
                 $.ajax({
-                        url: "http://" + $("#address").val() + ":" + $("#port").val() + "/api/" + $("#api_key").val() + "/sensors/" + $("#sensors").val(),
+                        url: "http://" + $("#ip-address").val() + ":" + $("#port").val() + "/api/" + $("#api_key").val() + "/sensors/" + $("#sensors").val(),
                         method: "PUT",
                         data: "{\"name\": \"" + $("#sensor_name").val() + "\"}",
                         dataType: "json"
@@ -271,7 +276,7 @@ https://www.github.com/HerrHofrat/deconz-config
                         beforeSend: function(request) {
                             return confirm("Are you sure you want to delete " + $("#sensor_name").val() + "?");
                         },
-                        url: "http://" + $("#address").val() + ":" + $("#port").val() + "/api/" + $("#api_key").val() + "/sensors/" + $("#sensors").val(),
+                        url: "http://" + $("#ip-address").val() + ":" + $("#port").val() + "/api/" + $("#api_key").val() + "/sensors/" + $("#sensors").val(),
                         method: "DELETE"
                     })
                     .success(function(data) {
@@ -290,7 +295,7 @@ https://www.github.com/HerrHofrat/deconz-config
                     return;
                 $("#permit_join_button").addClass("disabled");
                 $.ajax({
-                        url: "http://" + $("#address").val() + ":" + $("#port").val() + "/api/" + $("#api_key").val() + "/config",
+                        url: "http://" + $("#ip-address").val() + ":" + $("#port").val() + "/api/" + $("#api_key").val() + "/config",
                         method: "PUT",
                         data: "{\"permitjoin\": \"60\"}",
                         dataType: "json"
