@@ -49,7 +49,7 @@ https://www.github.com/HerrHofrat/deconz-config
 		        <div class="input-field col m3 s6">
 		        	<button type="submit" style="display:none;" id="connection_remember"></button>
 		            <a class="waves-effect waves-light btn" onclick="connect();" id="connection_open"><i class="material-icons left">cloud</i>Open</a>
-		            <a class="waves-effect waves-light btn" onclick="disconnect();" id="connection_close" style="display:none;"><i class="material-icons left">cloud_off</i>Close</a>	
+		            <a class="waves-effect waves-light btn" onclick="disconnect();" id="connection_close" style="display:none;"><i class="material-icons left">cloud_off</i>Close</a>
 		        </div>
             </form>
         </div>
@@ -83,22 +83,19 @@ https://www.github.com/HerrHofrat/deconz-config
         <div class="section" id="sensor_data" style="display:none;">
             <div class="row">
                 <div class="col m6 s12">
+                    <label>Data</label><br/>
                     <b>Manufacturer</b> <span id="sensor_data_manufacturer"></span><br/>
                     <b>Model</b> <span id="sensor_data_model"></span><br/>
                     <b>ETag</b> <span id="sensor_data_etag"></span><br/>
-                </div>
-                <div class="col m6 s12">
                     <b>Version</b> <span id="sensor_data_version"></span><br/>
                     <b>Type</b> <span id="sensor_data_type"></span><br/>
-                    <b>UniqueID</b> <span id="sensor_data_uniqueid"></span><br/>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col m6 s12">
-                    <b>updated</b> <span id="sensor_data_updated"></span><br/>
+                    <b>Unique ID</b> <span id="sensor_data_uniqueid"></span><br/>
+                    <b>Sensor ID</b> <span id="sensor_data_sensorid"></span><br/>
                 </div>
                 <div class="col m6 s12">
-                    <b>status</b> <span id="sensor_data_status"></span><br/>
+                    <label>State</label><br/>
+                    <div id="sensor_state">
+                    </div>
                 </div>
             </div>
             <div class="row">
@@ -106,6 +103,8 @@ https://www.github.com/HerrHofrat/deconz-config
                     <input id="sensor_name" type="text">
                     <label for="sensor_name" class="active">Sensor Name</label>
                 </div>
+            </div>
+            <div class="row" id="sensor_config">
             </div>
             <div class="row">
                 <div class="col m4 s6">
@@ -136,9 +135,10 @@ https://www.github.com/HerrHofrat/deconz-config
                         dataType: "json"
                     })
                     .success(function(data) {
-                        console.log(data);
-                        $("#ip-address").val(data[0].internalipaddress);
-                        $("#port").val(data[0].internalport);
+                        if(Object.keys(data).length != 0) {
+                            $("#ip-address").val(data[0].internalipaddress);
+                            $("#port").val(data[0].internalport);
+                        }
                         Materialize.updateTextFields();
                     })
                     .error(function(data) {
@@ -208,12 +208,17 @@ https://www.github.com/HerrHofrat/deconz-config
                             }));
                             $("#sensors").material_select();
                             sensorData[updateData.sensor.id] = updateData.sensor;
-                        } else if ("changed" === updateData["e"]) {
+                        } else if ("changed" === updateData["e"] && typeof updateData["state"] != "undefined") {
                             id = updateData["id"];
                             sensorData[id].state = updateData["state"];
                             if (id == $("#sensors").val()) {
-                                $("#sensor_data_updated").text(sensorData[id].state.lastupdated);
-                                $("#sensor_data_status").text(Object.keys(sensorData[id].state)[1] + ": " + sensorData[id].state[Object.keys(sensorData[id].state)[1]]);
+                                updateSensorState(sensorData[id].state);
+                            }
+                        } else if ("changed" === updateData["e"] && typeof updateData["config"] != "undefined") {
+                            id = updateData["id"];
+                            sensorData[id].config = updateData["config"];
+                            if (id == $("#sensors").val()) {
+                                updateSensorConfig(sensorData[id].config);
                             }
                         }
                     }
@@ -242,34 +247,86 @@ https://www.github.com/HerrHofrat/deconz-config
                 $("#sensor_data_version").text(sensorData[id].swversion);
                 $("#sensor_data_type").text(sensorData[id].type);
                 $("#sensor_data_uniqueid").text(sensorData[id].uniqueid);
-                try {
-                    $("#sensor_data_updated").text(sensorData[id].state.lastupdated);
-                } catch (e) {}
-                try {
-                    $("#sensor_data_status").text(Object.keys(sensorData[id].state)[1] + ": " + sensorData[id].state[Object.keys(sensorData[id].state)[1]]);
-                } catch (e) {}
+                $("#sensor_data_sensorid").text(id);
+
+                updateSensorState(sensorData[id].state);
+
                 $("#sensor_name").val(sensorData[id].name);
+
+                updateSensorConfig(sensorData[id].config);
+
                 Materialize.updateTextFields();
             }
 
-            function updateSensor() {
-                $.ajax({
-                        url: "http://" + $("#ip-address").val() + ":" + $("#port").val() + "/api/" + $("#api_key").val() + "/sensors/" + $("#sensors").val(),
-                        method: "PUT",
-                        data: "{\"name\": \"" + $("#sensor_name").val() + "\"}",
-                        dataType: "json"
-                    })
-                    .success(function(data) {
-                        sensorData[$("#sensors").val()].name = $("#sensor_name").val();
-                        id = $("#sensors").val();
-                        updateSensorList();
-                        $("#sensors").val(id).change();
-                        $("#sensors").material_select();
-                    })
-                    .error(function(data) {
-                        console.log(data);
-                    });
+            function updateSensorState(state) {
+                try {
+                    $("#sensor_state").empty();
+                    for(key in state) {
+                        $("#sensor_state").append("<b>" + key + "</b> <span>" + state[key] + "</span><br/>");
+                    }
+                } catch (e) {}
             }
+
+            function updateSensorConfig(config) {
+                $("#sensor_config").empty();
+                for(key in config) {
+                    var input = "";
+                    if(typeof(config[key]) === "boolean"){
+                        input = "<select id=\"sensor_config_" + key + "\"><option value=\"true\" " + (config[key]?"selected":"") + ">true</option><option value=\"false\" " + (config[key]?"":"selected") + ">false</option></select><label>" + key + "</label>";
+                    } else {
+                        input = "<input id=\"sensor_config_" + key + "\" type=\"text\" value=\"" + config[key] + "\"><label for=\"sensor_config_" + key + "\" class=\"active\">" + key + "</label>";
+                    }
+                    $("#sensor_config").append("<div class=\"input-field col s3\">" + input + "</div>");
+
+                    if(typeof(config[key]) === "boolean") {
+                        $("#sensor_config_"+key).material_select();
+                    }
+                }
+            }
+
+            function updateSensor() {
+                var id = $("#sensors").val();
+                if(sensorData[id].name != $("#sensor_name").val().trim()) {
+                    $.ajax({
+                            url: "http://" + $("#ip-address").val() + ":" + $("#port").val() + "/api/" + $("#api_key").val() + "/sensors/" + $("#sensors").val(),
+                            method: "PUT",
+                            data: "{\"name\": \"" + $("#sensor_name").val().trim() + "\"}",
+                            dataType: "json"
+                        })
+                        .success(function(data) {
+                            sensorData[$("#sensors").val()].name = $("#sensor_name").val().trim();
+                            updateSensorList();
+                            $("#sensors").val(id).change();
+                            $("#sensors").material_select();
+                        })
+                        .error(function(data) {
+                            console.log(data);
+                        });
+                }
+                var updateData = new Object();
+                for(key in sensorData[id].config) {
+                    if(String(sensorData[id].config[key]) != $("#sensor_config_"+key).val().trim()){
+                        updateData[key] = $("#sensor_config_"+key).val().trim();
+                    }
+                }
+                if(Object.keys(updateData).length != 0) {
+                    $.ajax({
+                            url: "http://" + $("#ip-address").val() + ":" + $("#port").val() + "/api/" + $("#api_key").val() + "/sensors/" + $("#sensors").val() + "/config",
+                            method: "PUT",
+                            data: JSON.stringify(updateData),
+                            dataType: "json"
+                        })
+                        .success(function(data) {
+                            for(key in updateData) {
+                                sensorData[id].config[key] = updateData[key];
+                            }
+                        })
+                        .error(function(data) {
+                            console.log(data);
+                        });
+                }
+            }
+
 
             function deleteSensor() {
                 $.ajax({
