@@ -15,9 +15,14 @@ After a sensor is selected, some meta data for this sensor is display - includin
 
 ### Sensor functions ###
 - update sensor name
+- update sensor configuration
 - delete sensor from network
 
 ### Known issues  ###
 - Currently only works over http
 - I only have Xiaomi Door Sensors at the moment - but I assume it will work with any type of sensor.
 
+### Tested devices ###
+- Xiaomi Aqara Window Door Sensor
+- Xiaomi Aqara Smart Wireless Switch
+- Xiaomi Aqara Human Body Sensor
