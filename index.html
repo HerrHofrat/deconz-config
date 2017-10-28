@@ -201,13 +201,9 @@ https://www.github.com/HerrHofrat/deconz-config
                     updateData = jQuery.parseJSON(event.data);
                     if ("event" === updateData["t"] && "sensors" === updateData["r"]) {
                         if ("added" === updateData["e"]) {
-                            Materialize.toast("New sensor found: " + updateData.sensor.name, 3000)
-                            $("#sensors").append($("<option>", {
-                                value: updateData.sensor.id,
-                                text: updateData.sensor.name
-                            }));
-                            $("#sensors").material_select();
+                            Materialize.toast("New sensor found: " + updateData.sensor.name, 3000);
                             sensorData[updateData.sensor.id] = updateData.sensor;
+                            updateSensorList(updateData.sensor.id);
                         } else if ("changed" === updateData["e"] && typeof updateData["state"] != "undefined") {
                             id = updateData["id"];
                             sensorData[id].state = updateData["state"];
@@ -225,15 +221,24 @@ https://www.github.com/HerrHofrat/deconz-config
                 };
             }
 
-            function updateSensorList() {
+            function updateSensorList(select_id=-1) {
                 $("#sensors").empty();
                 $("#sensors").append("<option value=\"-1\" disabled selected>Choose your option</option>");
-                $.each(sensorData, function(i, item) {
+                sensorDataArray = Object.keys(sensorData).map(function(key) {
+					return [Number(key), sensorData[key]];
+				});
+                sensorDataArray.sort(function(a, b) {
+                	return (a[1].name > b[1].name) ? 1 : ((a[1].name < b[1].name) ? -1 : 0);
+                });
+                $.each(sensorDataArray, function(i,item) {
                     $("#sensors").append($("<option>", {
-                        value: i,
-                        text: item.name
+                        value: item[0],
+                        text: item[1].name
                     }));
                 });
+                if(select_id != -1) {
+                	$("#sensors").val(select_id).change();
+                }
                 $("#sensors").material_select();
             }
 
@@ -294,10 +299,8 @@ https://www.github.com/HerrHofrat/deconz-config
                             dataType: "json"
                         })
                         .success(function(data) {
-                            sensorData[$("#sensors").val()].name = $("#sensor_name").val().trim();
-                            updateSensorList();
-                            $("#sensors").val(id).change();
-                            $("#sensors").material_select();
+                            sensorData[id].name = $("#sensor_name").val().trim();
+                            updateSensorList(id);
                         })
                         .error(function(data) {
                             console.log(data);
