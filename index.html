@@ -126,7 +126,17 @@ https://www.github.com/HerrHofrat/deconz-config
             var webSocket;
             $(document).ready(function() {
                 $("select").material_select();
+                init();
             });
+
+            function init() {
+                var ip = localStorage.getItem("ip-address");
+                var port = localStorage.getItem("port");
+                var api_key = localStorage.getItem("api_key");
+                if (ip !== null) $("#ip-address").val(ip);
+                if (port !== null) $("#port").val(port);
+                if (api_key !== null) $("#api_key").val(api_key);
+            }
 
             function discover() {
                 $.ajax({
@@ -147,6 +157,10 @@ https://www.github.com/HerrHofrat/deconz-config
             }
 
             function connect() {
+                localStorage.setItem("ip-address", $("#ip-address").val());
+                localStorage.setItem("port", $("#port").val());
+                localStorage.setItem("api_key", $("#api_key").val());
+
             	$("#connection_remember").click()
                 $.ajax({
                         url: "http://" + $("#ip-address").val() + ":" + $("#port").val() + "/api/" + $("#api_key").val(),
