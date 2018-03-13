@@ -13,6 +13,11 @@ https://www.github.com/HerrHofrat/deconz-config
     <!-- CSS  -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
+    <style>
+    .input-field label {
+		pointer-events: auto;
+	}
+    </style>
 
 </head>
 
@@ -39,14 +44,18 @@ https://www.github.com/HerrHofrat/deconz-config
 		            <input id="port" type="text">
 		            <label for="port">Port</label>
 		        </div>
-		        <div class="input-field col m2 s12">
+		        <div class="input-field col m2 s8">
 		            <input id="api_key" type="text">
 		            <label for="api_key">API Key</label>
 		        </div>
-		        <div class="input-field col m3 s6">
+		        <div class="input-field col m2 s4">
+		            <input type="checkbox" id="connection_save" checked="true" />
+		            <label for="connection_save">Save</label>
+		        </div>
+		        <div class="input-field col m2 s6">
 		            <a class="waves-effect waves-light btn" onclick="discover();" id="connection_discover"><i class="material-icons left">search</i>Discover</a>
 		        </div>
-		        <div class="input-field col m3 s6">
+		        <div class="input-field col m2 s6">
 		        	<button type="submit" style="display:none;" id="connection_remember"></button>
 		            <a class="waves-effect waves-light btn" onclick="connect();" id="connection_open"><i class="material-icons left">cloud</i>Open</a>
 		            <a class="waves-effect waves-light btn" onclick="disconnect();" id="connection_close" style="display:none;"><i class="material-icons left">cloud_off</i>Close</a>
@@ -130,12 +139,9 @@ https://www.github.com/HerrHofrat/deconz-config
             });
 
             function init() {
-                var ip = localStorage.getItem("ip-address");
-                var port = localStorage.getItem("port");
-                var api_key = localStorage.getItem("api_key");
-                if (ip !== null) $("#ip-address").val(ip);
-                if (port !== null) $("#port").val(port);
-                if (api_key !== null) $("#api_key").val(api_key);
+                $("#ip-address").val(localStorage.getItem("ip-address"));
+                $("#port").val(localStorage.getItem("port"));
+                $("#api_key").val(localStorage.getItem("api_key"));
             }
 
             function discover() {
@@ -157,9 +163,19 @@ https://www.github.com/HerrHofrat/deconz-config
             }
 
             function connect() {
-                localStorage.setItem("ip-address", $("#ip-address").val());
-                localStorage.setItem("port", $("#port").val());
-                localStorage.setItem("api_key", $("#api_key").val());
+            	var ip = '';
+            	var port = '';
+            	var api_key = '';
+            	
+            	if($("#connection_save").is(':checked')) {
+                	ip = $("#ip-address").val();
+                	port = $("#port").val();
+                	api_key = $("#api_key").val();
+                }
+                
+                localStorage.setItem("ip-address", ip);
+                localStorage.setItem("port", port);
+                localStorage.setItem("api_key", api_key);
 
             	$("#connection_remember").click()
                 $.ajax({
