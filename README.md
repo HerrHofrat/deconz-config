@@ -26,3 +26,6 @@ After a sensor is selected, some meta data for this sensor is display - includin
 - Xiaomi Aqara Window Door Sensor
 - Xiaomi Aqara Smart Wireless Switch
 - Xiaomi Aqara Human Body Sensor
+
+### Contributors ###
+[simonporter007](https://github.com/simonporter007)
